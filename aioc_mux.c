@@ -1,6 +1,7 @@
 // MERCURY HEADER GOES HERE
 // TBD
 
+#include "aioc_defs.h"
 #include "aioc_mux.h"
 #include "aioc_i2c_gpio.h"
 
@@ -8,6 +9,13 @@
 //================================
 // Public  definitions.
 //================================
+aioc_error_t aioc_mux_bank_init(
+  struct aioc_mux_bank_dev** dev,
+  struct aioc_mux_bank_init_param* aioc_mux_bank_init_param)
+{
+  return error_none;
+}
+
 
 //==============================================================================
 //==============================================================================
