@@ -30,14 +30,16 @@ static aioc_error_t map_ai_to_adc_handle_and_input(
         struct ad469x_dev** dev,
         aioc_adc_input_t* adc_input);
     
-static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev);
-
-static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev);
-
-//==========================
-//==========================
 static struct ad469x_dev* aioc_adc_dev_5v = 0;
+static struct aioc_mux_bank_dev *aioc_mux_bank_desc_5v_1 = 0;
+static struct aioc_mux_bank_dev *aioc_mux_bank_desc_5v_2 = 0;
 
+static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev);
+static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev);
+static aioc_error_t aioc_mux_bank_create_5v_2(struct aioc_mux_bank_dev **dev);
+
+//==========================
+//==========================
 //==========================
 //==========================
 
@@ -57,7 +59,7 @@ aioc_init(void)
   e = aioc_adc_device_create_5v(&aioc_adc_dev_5v);
   if (e)  {  return e;  }
 
-  // Create the 5V mux bank 1 amd 2 and set to external inputs.
+  // Create  5V mux bank device and set to external inputs for banks 1 and 2.
   e = aioc_mux_bank_create_5v_1(&aioc_mux_bank_desc_5v_1);
   if (e)  {  return e;  }
   e = aioc_mux_bank_create_5v_2(&aioc_mux_bank_desc_5v_2);
@@ -86,8 +88,52 @@ aioc_analog_input_conversion(aioc_analog_id_t analog_id, uint16_t* result)
   return error_none;
 }
 
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_external_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_external(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_external(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
 
-//================================
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_high_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_bit_high(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_bit_high(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
+
+///==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_low_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_bit_low(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_bit_low(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
+
+///================================
 // Private definitions.
 //================================
 
@@ -169,6 +215,46 @@ static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev)
 
  	struct no_os_gpio_init_param a1_line = {
 		.number = A5V_SW_BANK1_A1,
+		.platform_ops = &aioc_i2c_gpio_ops,
+		.extra = &aioc_i2c_gpio_init
+	};
+
+ struct aioc_mux_bank_init_param aioc_mux_bank_init_param = {
+  	.en_line = &en_line,
+    .a0_line = &a0_line,
+    .a1_line = &a1_line
+  };
+  
+  e = aioc_mux_bank_init(dev, &aioc_mux_bank_init_param);
+  if (e)  {  return e;  }
+
+  return error_none;
+}
+
+//==============================================================================
+//==============================================================================
+static aioc_error_t aioc_mux_bank_create_5v_2(struct aioc_mux_bank_dev **dev)
+{  
+  aioc_error_t e;
+    
+	struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
+		.device_id = 0,
+	};
+
+	struct no_os_gpio_init_param en_line = {
+		.number = A5V_SW_BANK2_EN,
+		.platform_ops = &aioc_i2c_gpio_ops,
+		.extra = &aioc_i2c_gpio_init
+	};
+
+ 	struct no_os_gpio_init_param a0_line = {
+		.number = A5V_SW_BANK2_A0,
+		.platform_ops = &aioc_i2c_gpio_ops,
+		.extra = &aioc_i2c_gpio_init
+	};
+
+ 	struct no_os_gpio_init_param a1_line = {
+		.number = A5V_SW_BANK2_A1,
 		.platform_ops = &aioc_i2c_gpio_ops,
 		.extra = &aioc_i2c_gpio_init
 	};

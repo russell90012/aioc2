@@ -100,8 +100,8 @@ aioc_error_t aioc_self_test(void)
     uint32_t i = 0;
     
     printf("%s: switching in the BIT HIGH inputs.\n", __FUNCTION__);   
-    // Multiplex in the BIT High inputs for 5V adc.
-    e = aioc_mux_switch_lines(AIOC_MUX_BANKS_5V, AIOC_MUX_LINES_BIT_HIGH);
+    // Set 5V ADC multiplex banks to BIT High inputs.
+    e = aioc_mux_banks_set_high_5v();
     if (e)  {  return e;  }
     printf("%s: ...done.\n", __FUNCTION__);
   

@@ -9,77 +9,112 @@
 //================================
 // Public  definitions.
 //================================
+
+//==============================================================================
+//==============================================================================
 aioc_error_t aioc_mux_bank_init(
-  struct aioc_mux_bank_dev** dev,
-  struct aioc_mux_bank_init_param* aioc_mux_bank_init_param)
+  struct aioc_mux_bank_dev** device,
+  struct aioc_mux_bank_init_param* aioc_mux_bank_init)
 {
-  return error_none;
-}
+  struct aioc_mux_bank_dev* dev = 0;
+	int32_t ret;
 
-
-//==============================================================================
-//==============================================================================
-aioc_error_t
-aioc_mux_switch_lines(
-    aioc_mux_banks_t aioc_mux_banks,
-    aioc_mux_lines_t aioc_mux_lines)
+  // TBD
+  dev = malloc(sizeof(*dev));
+	if (!dev)
   {
-  aioc_error_t e = error_none;
-  
-  switch (aioc_mux_banks)
-  {
-    case AIOC_MUX_BANKS_5V:
-#if 0
-      switch (aioc_mux_lines)
-      {
-        case AIOC_MUX_LINES_EXTERNAL:
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A0, 0);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A0, 0);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A1, 0);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A1, 0);
-          if (e)
-          {  return e;  }
-          break;
-
-        case AIOC_MUX_LINES_BIT_LOW:
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A0, 1);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A0, 1);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A1, 0);
-          if (e)
-          {  return e;  }
-          aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A1, 0);
-          if (e)
-          {  return e;  }
-          break;
-
-        case AIOC_MUX_LINES_BIT_HIGH:
-          e = aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A0, 0);
-          if (e)
-          {  return e;  }
-          e = aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A0, 0);
-          if (e)
-          {  return e;  }
-          e = aioc_i2c_gpio_pin_level_set(A5V_SW_BANK1_A1, 1);
-          if (e)
-          {  return e;  }
-          e = aioc_i2c_gpio_pin_level_set(A5V_SW_BANK2_A1, 1);
-          if (e)
-          {  return e;  }
-          break;
-     }
-#endif
-     break;
+    return error_alloc;
   }
- 
+  
+  ret = no_os_gpio_get_optional(&dev->en_line, aioc_mux_bank_init->en_line);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->en_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_get_optional(&dev->a0_line, aioc_mux_bank_init->a0_line);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a0_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_get_optional(&dev->a1_line, aioc_mux_bank_init->a1_line);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a1_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+  *device = dev;
+
   return error_none;
 }
+
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_bank_set_external(struct aioc_mux_bank_dev* dev)
+{
+	int32_t ret;
+
+  ret = no_os_gpio_direction_output(dev->en_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a0_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a1_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+  return error_none;
+}
+
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_bank_set_bit_high(struct aioc_mux_bank_dev* dev)
+{
+	int32_t ret;
+
+  ret = no_os_gpio_direction_output(dev->en_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a0_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a1_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+  return error_none;
+}
+
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_bank_set_bit_low(struct aioc_mux_bank_dev* dev)
+{
+	int32_t ret;
+
+  ret = no_os_gpio_direction_output(dev->en_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a0_line, NO_OS_GPIO_HIGH);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_gpio_direction_output(dev->a1_line, NO_OS_GPIO_LOW);
+	if (ret != 0)
+		return ret;
+
+  return error_none;
+}
+
