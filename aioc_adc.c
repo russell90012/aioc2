@@ -76,9 +76,9 @@
  *        ad469x_init() helper function.
  * @param [out] dev - ad469x_dev device handler.
  * @param [in] init_param - Pointer to the initialization structure.
- * @return 0 in case of success, -1 otherwise.
+ * @return error handling result code.
  */
-static int32_t ad469x_init_gpio(
+static aioc_error_t ad469x_init_gpio(
          struct ad469x_dev *dev,
 				 struct ad469x_init_param *init_param);
 /**
@@ -258,41 +258,50 @@ aioc_adc_init(
 printf("%s: enter\n", __FUNCTION__);
 #endif
  
-	// TBD
   dev = (struct aioc_adc_dev *)malloc(sizeof(*dev));
-	if (!dev)
-  {
-    return error_alloc;
-  }
+	if (!dev)    return error_alloc;
 
-	e = aioc_util_spi_init(&dev->spi_desc, init_param->spi_init);
-  if (e) {  return e;  }
-
+  // Setup ADC descriptor.
 	e = ad469x_init_gpio(dev, init_param);
-  if (e) {  return e;  }
+  if (e)    goto error_dev;
 
-// Perform ADC reset.
+  // Setup SPI bus descriptor.
+	e = aioc_util_spi_init(&dev->spi_desc, init_param->spi_init);
+  if (e)    goto error_gpio;
+
+  // Perform ADC reset.
   e = aioc_adc_reset_dev(dev);
-  if (e) {  return e;  }
+  if (e)    goto error_spi;
 
   // Perform ADC self-check.
   e = aioc_adc_self_check(dev);
-  if (e) {  return e;  }
+  if (e)    goto error_spi;
 
   // Configure the ADC
   e = aioc_adc_configure_single_cycle_mode(dev);
-  if (e) {  return e;  }
+  if (e)    goto error_spi;
 
   // Start conversion mode.
   e = aioc_adc_conversion_mode_enter(dev);
-  if (e) {  return e;  }
+  if (e)    goto error_spi;
 
   *device = dev;
 
+  return error_none;
+
+error_spi:
+  aioc_util_spi_remove(dev->spi_desc);
+error_gpio:
+  no_os_gpio_remove(dev->gpio_convst);
+  no_os_gpio_remove(dev->gpio_busy);
+  no_os_gpio_remove(dev->gpio_resetn);
+error_dev:
+  free(dev);
+  
  #ifdef  AIOC_DEBUG
 printf("%s: exit\n", __FUNCTION__);
 #endif
-   return error_none;
+   return e;
 }
 
 //==============================================================================
@@ -306,7 +315,7 @@ aioc_adc_convert_single_cycle(
   aioc_error_t e = error_none;
   int32_t ret;
 
-  #ifdef  AIOC_DEBUG
+#ifdef  AIOC_DEBUG
 printf("%s: enter\n", __FUNCTION__);
 #endif
 
@@ -318,14 +327,12 @@ printf("%s: enter\n", __FUNCTION__);
   // duration.
   //  CNV Low Time: tCNVL: 80 ns
  	ret = no_os_gpio_set_value(dev->gpio_convst, NO_OS_GPIO_LOW);
-  if (ret != 0)
-		return ret;
+  if (ret)  return error_adc_convert;
 
   aioc_util_delay_ns(80);
   
  	ret = no_os_gpio_set_value(dev->gpio_convst, NO_OS_GPIO_HIGH);
-  if (ret != 0)
-		return ret;
+  if (ret)  return error_adc_convert;
 
   // Delay for conversion time.
   //  Conversion Time: tCONVERT: 380-415 ns.
@@ -349,35 +356,33 @@ printf("%s: exit\n", __FUNCTION__);
 
 //==============================================================================
 //==============================================================================
-static int32_t ad469x_init_gpio(
+static aioc_error_t ad469x_init_gpio(
          struct ad469x_dev *dev,
 				 struct ad469x_init_param *init_param)
 {
 	int32_t ret;
 
-	ret = no_os_gpio_get_optional(&dev->gpio_resetn, init_param->gpio_resetn);
-	if (ret != 0)
-		return ret;
+  // Setup the reset line.
+  ret = no_os_gpio_get_optional(&dev->gpio_resetn, init_param->gpio_resetn);
+	if (ret)  return error_gpio;
 
 	ret = no_os_gpio_direction_output(dev->gpio_resetn, NO_OS_GPIO_HIGH);
-	if (ret != 0)
-		return ret;
+	if (ret)  return error_gpio;
 
   
+  // Setup the convst line.
 	ret = no_os_gpio_get_optional(&dev->gpio_convst, init_param->gpio_convst);
-	if (ret != 0)
-		return ret;
+	if (ret)  return error_gpio;
 
 	ret = no_os_gpio_direction_output(dev->gpio_convst, NO_OS_GPIO_LOW);
-	if (ret != 0)
-		return ret;
+	if (ret)  return error_gpio;
 
   
+  // Setup the busy line.
   ret = no_os_gpio_get_optional(&dev->gpio_busy, init_param->gpio_busy);
-	if (ret != 0)
-		return ret;
+	if (ret)  return error_gpio;
 
-	return 0;
+	return error_none;
 }
 
 //==============================================================================
@@ -386,6 +391,7 @@ static aioc_error_t aioc_adc_reset_dev(struct ad469x_dev* dev)
 {
   aioc_error_t e = error_none;
   int32_t ret;
+  uint8_t data;
 
   // tRESETL is the minimum amount of time that RESET must be driven low,
   // and tHWR_DELAY is the time that the digital host must wait between a
@@ -393,28 +399,37 @@ static aioc_error_t aioc_adc_reset_dev(struct ad469x_dev* dev)
   //
   // RESET Low Time:        tRESETL:    10 ns
   // Hardware Reset Delay:  tHWR_DELAY: 310 µs
-  // Software Reset Delay:  tSWR_DELAY: 310 µs
 
  	ret = no_os_gpio_set_value(dev->gpio_resetn, NO_OS_GPIO_LOW);
-  if (ret != 0)
-		return ret;
+  if (ret)  return error_adc_reset;
 
   aioc_util_delay_ns(10);
   
  	ret = no_os_gpio_set_value(dev->gpio_resetn, NO_OS_GPIO_HIGH);
-  if (ret != 0)
-		return ret;
+  if (ret)  return error_adc_reset;
 
- 
+  aioc_util_delay_ns(310);
+
+  // Check the Device Status Register.  Expect a reset flag and no spi error.
+  data = 0;
+  e = aioc_adc_register_read(dev, STATUS_adrs, &data, 1);
+  if (e) {  return e;  }
+  if (STATUS_RESET_FLAG_read(data) == 0)
+  {
+    return error_adc_reset;
+  }
+  if (STATUS_SPI_ERROR_read(data))
+  {
+    return error_adc_reset;
+  }
+
   return error_none;
 }
 
-//==============================================================================
-//
-// Register Configuration Mode routines.
-//
-//==============================================================================
 
+//==============================================================================
+// Register Configuration Mode routines.
+//==============================================================================
 
 //==============================================================================
 //==============================================================================
@@ -426,19 +441,6 @@ aioc_adc_self_check(struct ad469x_dev* dev)
 #ifdef  AIOC_DEBUG
 printf("%s: enter\n", __FUNCTION__);
 #endif
-
-  // Check the Device Status Register for reset flag or spi error.
-  data = 0;
-  e = aioc_adc_register_read(dev, STATUS_adrs, &data, 1);
-  if (e) {  return e;  }
-  if (STATUS_RESET_FLAG_read(data) == 0)
-  {
-    return error_adc_self_check;
-  }
-  if (STATUS_SPI_ERROR_read(data))
-  {
-    return error_adc_self_check;
-  }
 
   // Check the Vendor ID of the ADC.
   //  Read vendor id low register and check the id.
@@ -717,7 +719,8 @@ aioc_adc_register_write(
 //==============================================================================
 //==============================================================================
 static aioc_error_t
-aioc_adc_register_mask_write(struct ad469x_dev* dev,
+aioc_adc_register_mask_write(
+  struct ad469x_dev* dev,
   uint32_t register_adrs,
   uint8_t mask,
   uint8_t data)
@@ -795,7 +798,10 @@ aioc_adc_conversion_mode_command_write(struct ad469x_dev* dev, uint32_t command)
   data[0] = (uint8_t)(((command & 0x1F) << 3) & 0xFF);
   data[1] = 0;
 
-  e = aioc_util_spi_transaction(dev->spi_desc, data, 2);
+  e = aioc_util_spi_transaction(
+        dev->spi_desc,
+        data,
+        2);
   if (e) {  return e;  }
 
   return error_none;
@@ -812,14 +818,17 @@ aioc_adc_conversion_mode_result_read(struct ad469x_dev* dev, uint16_t *result)
   uint8_t data[2] = {0, 0};
 
   // Read 16 bits.
-  e = aioc_util_spi_transaction(dev->spi_desc, data, 2);
+  e = aioc_util_spi_transaction(
+        dev->spi_desc,
+        data,
+        2);
   if (e) {  return e;  }
 
   // Transaction put data in big endian, this is little endian machine.
   // So act accordingly.
-  *result = (uint16_t)(((
-                ((uint16_t)(data[0])) << 8) & 0xFF00) |
-                ((uint16_t)(data[1]) & 0x00FF));
+  *result = (uint16_t)((
+              (((uint16_t)(data[0])) << 8)  & 0xFF00) |
+              ((uint16_t)(data[1])          & 0x00FF));
 
   return error_none;
 }

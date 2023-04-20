@@ -61,6 +61,8 @@ aioc_error_t aioc_util_spi_init(
               struct no_os_spi_desc ** spi_desc,
               struct no_os_spi_init_param* parm);
 
+aioc_error_t aioc_util_spi_remove(struct no_os_spi_desc* spi_desc);
+
 
 aioc_error_t aioc_util_spi_transaction(
               struct no_os_spi_desc * spi_desc,

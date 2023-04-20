@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 
@@ -242,12 +243,13 @@ aioc_i2c_gpio_register_write(
  * @brief Prepare the GPIO decriptor.
  * @param desc - The GPIO descriptor.
  * @param param - The structure that contains the GPIO parameters.
- * @return 0 in case of success, -1 otherwise.
+ * @return 0 in case of success, error otherwise.
  */
 static int32_t _gpio_init(
   struct no_os_gpio_desc *desc,
 	const struct no_os_gpio_init_param *param)
 {
+  aioc_error_t e;
 	int32_t				ret;
 	struct aioc_i2c_gpio_desc		    *xdesc;
 	struct aioc_i2c_gpio_init_param	*xinit;
@@ -257,7 +259,8 @@ static int32_t _gpio_init(
 
 	desc->number = param->number;
 
-  aioc_util_i2c_init(&xdesc->instance);
+  e = aioc_util_i2c_init(&xdesc->instance);
+  if (e)  return -EINVAL;
   
 	return 0;
 }
@@ -273,7 +276,7 @@ static int32_t _gpio_init(
  * @brief Obtain the GPIO decriptor.
  * @param desc - The GPIO descriptor.
  * @param param - GPIO initialization parameters
- * @return 0 in case of success, -1 otherwise.
+ * @return 0 in case of success, error otherwise.
  */
 int32_t aioc_i2c_gpio_get(struct no_os_gpio_desc **desc,
 		     const struct no_os_gpio_init_param *param)
@@ -286,7 +289,7 @@ int32_t aioc_i2c_gpio_get(struct no_os_gpio_desc **desc,
 	extra = (struct aioc_i2c_gpio_desc*)malloc(sizeof(*extra));
 
 	if (!descriptor || !extra)
-		return -1;
+		return -EINVAL;
 
 	descriptor->extra = extra;
 	ret = _gpio_init(descriptor, param);
@@ -302,7 +305,7 @@ error:
 	free(extra);
 	free(descriptor);
 
-	return -1;
+	return ret;
 }
 
 /**
@@ -316,7 +319,7 @@ int32_t aioc_i2c_gpio_get_optional(struct no_os_gpio_desc **desc,
 {
 	if(param == NULL) {
 		*desc = NULL;
-		return 0;
+		return -EINVAL;
 	}
 
 	return aioc_i2c_gpio_get(desc, param);
@@ -346,14 +349,24 @@ int32_t aioc_i2c_gpio_remove(struct no_os_gpio_desc *desc)
  */
 int32_t aioc_i2c_gpio_direction_input(struct no_os_gpio_desc *desc)
 {
-  aioc_error_t e;
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  const i2c_gpio_pin_conf_t*  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  uint32_t              device_adrs = pin_conf->device_adrs;
-  uint32_t              bank = pin_conf->bank;
-  uint32_t              pin = pin_conf->pin;
+  i2c_gpio_pin_conf_t*  pin_conf;
+  uint32_t              device_adrs;
+  uint32_t              bank;
+  uint32_t              pin;
 	uint8_t               reg_val;
+  aioc_error_t          e;
   
+  // Get the i2c gpio pin configuration for the described number. Check the
+  // number first.
+  if (desc->number >= i2c_gpio_pin_configuration_table_length)
+    return -EINVAL;
+  
+  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
+  device_adrs = pin_conf->device_adrs;
+  bank = pin_conf->bank;
+  pin = pin_conf->pin;
+
   // Get the configuration register value for this pin configuration.
   e = aioc_i2c_gpio_register_read(
         extra->instance,
@@ -376,60 +389,70 @@ int32_t aioc_i2c_gpio_direction_input(struct no_os_gpio_desc *desc)
 
 
 /**
- * @brief Enable the output direction of the specified GPIO.
+ * @brief Enable the output direction of the specified GPIO and set it's value.
  * @param desc - The GPIO descriptor.
  * @param value - The value.
  *                Example: NO_OS_GPIO_HIGH
  *                         NO_OS_GPIO_LOW
- * @return 0 in case of success, -1 otherwise.
+ * @return 0 in case of success, error  otherwise.
  */
 int32_t aioc_i2c_gpio_direction_output(struct no_os_gpio_desc *desc,
 				  uint8_t value)
 {
-  aioc_error_t e;
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  const i2c_gpio_pin_conf_t*  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  uint32_t              device_adrs = pin_conf->device_adrs;
-  uint32_t              bank = pin_conf->bank;
-  uint32_t              pin = pin_conf->pin;
+  i2c_gpio_pin_conf_t*  pin_conf;
+  uint32_t              device_adrs;
+  uint32_t              bank;
+  uint32_t              pin;
 	uint8_t               reg_val;
+  aioc_error_t          e;
   
-  // Get the configuration register value for this pin configuration.
+  // Get the i2c gpio pin configuration for the described number. Check the
+  // number first.
+  if (desc->number >= i2c_gpio_pin_configuration_table_length)
+    return -EINVAL;
+  
+  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
+  device_adrs = pin_conf->device_adrs;
+  bank = pin_conf->bank;
+  pin = pin_conf->pin;
+
+  // Set the configuration regster for this pin to output direcction.
   e = aioc_i2c_gpio_register_read(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_CONFIG_0 + bank,
         &reg_val);
-
-  // Set the direction as output for this pin.
+  if (e)  return -EINVAL;
+  
 	reg_val &= ~(1 << pin);
-
-  // Set the configuration register value for this pin configuration.
+  
   e = aioc_i2c_gpio_register_write(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_CONFIG_0 + bank,
         reg_val);
+  if (e)  return -EINVAL;
 
-  // Get the output register value for this pin configuration.
+  // Set the output regster for this pin to the specified value.
   e = aioc_i2c_gpio_register_read(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_OUTPUT_0 + bank,
         &reg_val);
+  if (e)  return -EINVAL;
 
-  // Set the value  as given for this pin.
 	if (value)
 		reg_val |= (1 << pin);
   else
     reg_val &= ~(1 << pin);
   
-  // Set the output register value for this pin configuration.
   e = aioc_i2c_gpio_register_write(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_OUTPUT_0 + bank,
         reg_val);
+  if (e)  return -EINVAL;
 
 	return 0;
 }
@@ -446,7 +469,7 @@ int32_t aioc_i2c_gpio_direction_output(struct no_os_gpio_desc *desc,
 int32_t aioc_i2c_gpio_get_direction(struct no_os_gpio_desc *desc,
 			       uint8_t *direction)
 {
-  return 0;
+  return -ENOSYS;
 }
 
 /**
@@ -457,36 +480,45 @@ int32_t aioc_i2c_gpio_get_direction(struct no_os_gpio_desc *desc,
  *                         NO_OS_GPIO_LOW
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_set_value(struct no_os_gpio_desc *desc,
-			   uint8_t value)
+int32_t aioc_i2c_gpio_set_value(struct no_os_gpio_desc *desc, uint8_t value)
 {
-  aioc_error_t e;
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  const i2c_gpio_pin_conf_t*  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  uint32_t              device_adrs = pin_conf->device_adrs;
-  uint32_t              bank = pin_conf->bank;
-  uint32_t              pin = pin_conf->pin;
+  i2c_gpio_pin_conf_t*  pin_conf;
+  uint32_t              device_adrs;
+  uint32_t              bank;
+  uint32_t              pin;
 	uint8_t               reg_val;
+  aioc_error_t          e;
   
-   // Get the output register value for this pin configuration.
+  // Get the i2c gpio pin configuration for the described number. Check the
+  // number first.
+  if (desc->number >= i2c_gpio_pin_configuration_table_length)
+    return -EINVAL;
+  
+  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
+  device_adrs = pin_conf->device_adrs;
+  bank = pin_conf->bank;
+  pin = pin_conf->pin;
+
+  // Set the output regster for this pin to the specified value.
   e = aioc_i2c_gpio_register_read(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_OUTPUT_0 + bank,
         &reg_val);
+  if (e)  return -EINVAL;
 
-  // Set the value  as given for this pin.
 	if (value)
 		reg_val |= (1 << pin);
   else
     reg_val &= ~(1 << pin);
   
-  // Set the output register value for this pin configuration.
   e = aioc_i2c_gpio_register_write(
         extra->instance,
         device_adrs,
         COMMAND_BYTE_OUTPUT_0 + bank,
         reg_val);
+  if (e)  return -EINVAL;
 
 	return 0;
 }
@@ -503,15 +535,25 @@ int32_t aioc_i2c_gpio_set_value(struct no_os_gpio_desc *desc,
 int32_t aioc_i2c_gpio_get_value(struct no_os_gpio_desc *desc,
 			   uint8_t *value)
 {
-  aioc_error_t e;
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  const i2c_gpio_pin_conf_t*  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  uint32_t              device_adrs = pin_conf->device_adrs;
-  uint32_t              bank = pin_conf->bank;
-  uint32_t              pin = pin_conf->pin;
+  i2c_gpio_pin_conf_t*  pin_conf;
+  uint32_t              device_adrs;
+  uint32_t              bank;
+  uint32_t              pin;
 	uint8_t               reg_val;
+  aioc_error_t          e;
   
-   // Get the output register value for this pin configuration.
+  // Get the i2c gpio pin configuration for the described number. Check the
+  // number first.
+  if (desc->number >= i2c_gpio_pin_configuration_table_length)
+    return -EINVAL;
+  
+  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
+  device_adrs = pin_conf->device_adrs;
+  bank = pin_conf->bank;
+  pin = pin_conf->pin;
+
+  // Get the output register value for this pin configuration.
   e = aioc_i2c_gpio_register_read(
         extra->instance,
         device_adrs,

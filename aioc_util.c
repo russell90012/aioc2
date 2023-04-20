@@ -52,8 +52,7 @@ aioc_error_t aioc_util_spi_init(
   struct no_os_spi_desc* desc;
 
 	desc = (struct no_os_spi_desc *)malloc(sizeof(*desc));
-	if (!desc)
-  {  return error_alloc;  }
+	if (!desc)  {  return error_alloc;  }
 
   desc->device_id = parm->device_id;
   desc->chip_select = parm->chip_select;
@@ -63,11 +62,20 @@ aioc_error_t aioc_util_spi_init(
   return error_none;
 }
   
+//==============================================================================
+//==============================================================================
+ 
+aioc_error_t aioc_util_spi_remove(struct no_os_spi_desc* spi_desc)
+{
+  free(spi_desc);
+  
+  return error_none;
+}
 
 //==============================================================================
 //==============================================================================
 aioc_error_t aioc_util_spi_transaction(
-              struct no_os_spi_desc * spi_desc,
+              struct no_os_spi_desc* spi_desc,
               uint8_t* data,
               uint32_t number_of_bytes)
 {
@@ -87,8 +95,9 @@ aioc_error_t aioc_util_spi_transaction(
 //==============================================================================
 aioc_error_t aioc_util_i2c_init(void** instance)
 {
-  if (instance)
-    *instance = 0;
+  if (!instance)  return  error_bad_param;
+  
+  *instance = 0;
   
   return error_none;
 }

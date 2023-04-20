@@ -1,3 +1,12 @@
 {
-  "files": {}
+  "files": {
+    "aioc_i2c_gpio.c": [
+      {
+        "id": "ae1711d5-605e-4d2c-a04e-a56c0f1fd2ce",
+        "line": 423,
+        "version": 697,
+        "index": 12988
+      }
+    ]
+  }
 }
