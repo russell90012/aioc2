@@ -109,14 +109,14 @@ aioc_error_t aioc_self_test(void)
     // Process list of analog inputs and verify the results for each input.
     for (i = 0; i < test_table_length; i++)
     {  
-      printf("%s: converting analog input: %s\n",
+      printf("%s:   converting analog input: %s\n",
         __FUNCTION__,
         test_table[i].name);
       e = aioc_analog_input_conversion(test_table[i].ai_id, &result);
       if (e)  {  return e;  }
-      printf("%s: ...done.\n", __FUNCTION__);
+      printf("%s:   ...done.\n", __FUNCTION__);
       
-      printf("%s: checking result %x, upper limit %x, lower limit %x\n",
+      printf("%s:   checking result %x, upper limit %x, lower limit %x\n",
         __FUNCTION__,
         result,
         test_table[i].bit_h_upper_limit,
@@ -125,15 +125,15 @@ aioc_error_t aioc_self_test(void)
       if (result < test_table[i].bit_h_lower_limit ||
           result > test_table[i].bit_h_upper_limit)
       {
-        printf("%s: ...result out of range, exiting.\n", __FUNCTION__);
+        printf("%s:   ...result out of range.\n", __FUNCTION__);
       }
       else
       {
-        printf("%s: ...result in range, continuing\n", __FUNCTION__);      
+        printf("%s:   ...result in range\n", __FUNCTION__);      
       }
     }
 
-    printf("%s: ...done.\n", __FUNCTION__);
+    printf("%s:   ...done.\n", __FUNCTION__);
   }  
   printf("%s: ...done.\n", __FUNCTION__);
 

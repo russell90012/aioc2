@@ -149,8 +149,8 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 	};
 
 	struct no_os_gpio_init_param ad469x_convst = {
-		.number = 0,  // TBD
-		.platform_ops = &xil_gpio_ops,
+		.number = NC_0,  // TBD Using i2c GPIO as a fake for PS driver 
+		.platform_ops = &aioc_i2c_gpio_ops,
 		.extra = &xil_gpio_init
 	};
 

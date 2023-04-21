@@ -19,6 +19,12 @@
 // Public specifications.
 //================================
 
+void aioc_hw_sim_i2c_read(
+  uint32_t dev_adrs,
+  uint32_t reg_adrs,
+  uint8_t* data,
+  uint32_t data_count);
+
 void aioc_hw_sim_i2c_write(
   uint32_t dev_adrs,
   uint32_t reg_adrs,

@@ -57,7 +57,7 @@ aioc_error_t aioc_util_spi_init(
   desc->device_id = parm->device_id;
   desc->chip_select = parm->chip_select;
     
-  // TBD
+  *spi_desc = desc;
    
   return error_none;
 }
@@ -126,6 +126,9 @@ aioc_error_t aioc_util_i2c_read(
   uint8_t* data,
   uint32_t num_bytes)
 {
+#ifdef AIOC_HW_SIM
+  aioc_hw_sim_i2c_read(dev_adrs, reg_adrs, data, num_bytes);
+#endif
   return error_none;
 }
 
