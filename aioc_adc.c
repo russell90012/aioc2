@@ -2,7 +2,7 @@
 // TBD
 
 #include "aioc_adc.h"
-#include "aioc_gpio.h"
+#include "no_os_gpio.h"
 #include "aioc_i2c_gpio.h"
 #include "aioc_util.h"
 

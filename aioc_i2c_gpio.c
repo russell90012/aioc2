@@ -9,7 +9,7 @@
  */
 
 #include "aioc_defs.h"
-#include "aioc_gpio.h"
+#include "no_os_gpio.h"
 #include "aioc_i2c_gpio.h"
 #include "aioc_util.h"
 
@@ -257,6 +257,7 @@ static int32_t _gpio_init(
 	xdesc = desc->extra;
 	xinit = param->extra;
 
+	desc->port = param->port;
 	desc->number = param->number;
 
   e = aioc_util_i2c_init(&xdesc->instance);

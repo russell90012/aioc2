@@ -3,7 +3,7 @@
 
 #include "aioc.h"
 #include "aioc_adc.h"
-#include "aioc_gpio.h"
+#include "no_os_gpio.h"
 #include "aioc_i2c_gpio.h"
 #include "xilinx_gpio.h"
 #include "aioc_mux.h"
@@ -143,22 +143,18 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 {  
   aioc_error_t e;
     
-	struct xil_gpio_init_param xil_gpio_init = {
-		.device_id = 0,  // TBD
-		.type = GPIO_PS,
-	};
-
-	struct no_os_gpio_init_param ad469x_convst = {
-		.number = NC_0,  // TBD Using i2c GPIO as a fake for PS driver 
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &xil_gpio_init
-	};
-
-	
   struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
 		.device_id = 0,
 	};
 
+
+	struct no_os_gpio_init_param ad469x_convst = {
+		.number = NC_0,  // TBD Using i2c GPIO as a fake for PS driver 
+		.platform_ops = &aioc_i2c_gpio_ops,
+		.extra = &aioc_i2c_gpio_init
+	};
+
+	
 	struct no_os_gpio_init_param ad469x_resetn = {
 		.number = A5V_3V3_ADC_RESET_N,
 		.platform_ops = &aioc_i2c_gpio_ops,

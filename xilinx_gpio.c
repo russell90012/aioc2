@@ -44,7 +44,7 @@
 #include <stdlib.h>
 
 
-#include "aioc_gpio.h"
+#include "no_os_gpio.h"
 #include "xilinx_gpio.h"
 
 /******************************************************************************/

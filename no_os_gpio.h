@@ -50,6 +50,9 @@
 /********************** Macros and Constants Definitions **********************/
 /******************************************************************************/
 
+#define NO_OS_GPIO_OUT	0x01
+#define NO_OS_GPIO_IN		0x00
+
 /******************************************************************************/
 /*************************** Types Declarations *******************************/
 /******************************************************************************/
@@ -153,14 +156,12 @@ struct no_os_gpio_platform_ops {
 /******************************************************************************/
 
 /* Obtain the GPIO decriptor. */
-int32_t no_os_gpio_get(
-  struct no_os_gpio_desc **desc,
-	const struct no_os_gpio_init_param *param);
+int32_t no_os_gpio_get(struct no_os_gpio_desc **desc,
+		       const struct no_os_gpio_init_param *param);
 
 /* Obtain optional GPIO descriptor. */
-int32_t no_os_gpio_get_optional(
-  struct no_os_gpio_desc **desc,
-	const struct no_os_gpio_init_param *param);
+int32_t no_os_gpio_get_optional(struct no_os_gpio_desc **desc,
+				const struct no_os_gpio_init_param *param);
 
 /* Free the resources allocated by no_os_gpio_get(). */
 int32_t no_os_gpio_remove(struct no_os_gpio_desc *desc);
@@ -169,23 +170,19 @@ int32_t no_os_gpio_remove(struct no_os_gpio_desc *desc);
 int32_t no_os_gpio_direction_input(struct no_os_gpio_desc *desc);
 
 /* Enable the output direction of the specified GPIO. */
-int32_t no_os_gpio_direction_output(
-  struct no_os_gpio_desc *desc,
-	uint8_t value);
+int32_t no_os_gpio_direction_output(struct no_os_gpio_desc *desc,
+				    uint8_t value);
 
 /* Get the direction of the specified GPIO. */
-int32_t no_os_gpio_get_direction(
-  struct no_os_gpio_desc *desc,
-  uint8_t *direction);
+int32_t no_os_gpio_get_direction(struct no_os_gpio_desc *desc,
+				 uint8_t *direction);
 
 /* Set the value of the specified GPIO. */
-int32_t no_os_gpio_set_value(
-  struct no_os_gpio_desc *desc,
-	uint8_t value);
+int32_t no_os_gpio_set_value(struct no_os_gpio_desc *desc,
+			     uint8_t value);
 
 /* Get the value of the specified GPIO. */
-int32_t no_os_gpio_get_value(
-  struct no_os_gpio_desc *desc,
-	uint8_t *value);
+int32_t no_os_gpio_get_value(struct no_os_gpio_desc *desc,
+			     uint8_t *value);
 
 #endif // _NO_OS_GPIO_H_
