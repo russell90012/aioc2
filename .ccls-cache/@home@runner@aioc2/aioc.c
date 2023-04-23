@@ -3,9 +3,12 @@
 
 #include "aioc.h"
 #include "aioc_adc.h"
-#include "aioc_gpio.h"
-#include "aioc_i2c_gpio.h"
+#include "no_os_gpio.h"
+#include "no_os_i2c.h"
+#include "aioc_tca9555.h"
+#include "aioc_i2c.h"
 #include "xilinx_gpio.h"
+#include "aioc_mux.h"
 
 
 //==========================
@@ -29,12 +32,16 @@ static aioc_error_t map_ai_to_adc_handle_and_input(
         struct ad469x_dev** dev,
         aioc_adc_input_t* adc_input);
     
-static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev);
-
-//==========================
-//==========================
 static struct ad469x_dev* aioc_adc_dev_5v = 0;
+static struct aioc_mux_bank_dev *aioc_mux_bank_desc_5v_1 = 0;
+static struct aioc_mux_bank_dev *aioc_mux_bank_desc_5v_2 = 0;
 
+static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev);
+static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev);
+static aioc_error_t aioc_mux_bank_create_5v_2(struct aioc_mux_bank_dev **dev);
+
+//==========================
+//==========================
 //==========================
 //==========================
 
@@ -54,8 +61,11 @@ aioc_init(void)
   e = aioc_adc_device_create_5v(&aioc_adc_dev_5v);
   if (e)  {  return e;  }
 
-  // Create the 5V mux bank and set to external inputs.
-  e = aioc_mux_bank_create_5v(&aioc_mux_bank_desc_5v);
+  // Create  5V mux bank device and set to external inputs for banks 1 and 2.
+  e = aioc_mux_bank_create_5v_1(&aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+  e = aioc_mux_bank_create_5v_2(&aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
 
   return error_none;
 }
@@ -80,10 +90,56 @@ aioc_analog_input_conversion(aioc_analog_id_t analog_id, uint16_t* result)
   return error_none;
 }
 
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_external_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_external(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_external(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
 
-//================================
+//==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_high_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_bit_high(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_bit_high(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
+
+///==============================================================================
+//==============================================================================
+aioc_error_t aioc_mux_banks_set_low_5v()
+{
+  aioc_error_t e;
+  
+  e = aioc_mux_bank_set_bit_low(aioc_mux_bank_desc_5v_1);
+  if (e)  {  return e;  }
+    
+  e = aioc_mux_bank_set_bit_low(aioc_mux_bank_desc_5v_2);
+  if (e)  {  return e;  }
+    
+  return error_none;
+}
+
+///================================
 // Private definitions.
 //================================
+// TBD
+const int tbd = 0;
 
 //==============================================================================
 //==============================================================================
@@ -91,42 +147,63 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 {  
   aioc_error_t e;
     
-	struct xil_gpio_init_param xil_gpio_init = {
-		.device_id = 0,  // TBD
-		.type = GPIO_PS,
-	};
+  
+  // convst_line
+  struct no_os_i2c_init_param  aioc_i2c_convst_line = 
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+ };
 
-	struct no_os_gpio_init_param ad469x_convst = {
-		.number = 0,  // TBD
-		.platform_ops = &xil_gpio_ops,
-		.extra = &xil_gpio_init
+	struct no_os_gpio_init_param ad469x_convst =
+  {
+		.port = tbd,
+    .number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_convst_line
 	};
 
 	
-  struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
-		.device_id = 0,
-	};
+  // A5V_3V3_ADC_RESET_N,
+  struct no_os_i2c_init_param  aioc_i2c_reset_n_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
 
-	struct no_os_gpio_init_param ad469x_resetn = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+	struct no_os_gpio_init_param ad469x_resetn =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_reset_n_line
 	};
+  
+  // A5V_3V3_ADC_busy,
+  struct no_os_i2c_init_param  aioc_i2c_busy_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
 
-  struct no_os_gpio_init_param ad469x_busy = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+  struct no_os_gpio_init_param ad469x_busy =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_busy_line
 	};
 
   
-  struct no_os_spi_init_param spi_init = {
+  struct no_os_spi_init_param spi_init =
+  {
   	.chip_select = 0,
     .device_id = 0
   };
   
   
-  struct ad469x_init_param ad469x_init_param = {
+  struct ad469x_init_param ad469x_init_param =
+  {
   	.spi_init = &spi_init,
   	.gpio_resetn = &ad469x_resetn,
     .gpio_convst = &ad469x_convst,
@@ -141,53 +218,129 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 
 //==============================================================================
 //==============================================================================
-static aioc_error_t aioc_mux_bank_create_5v(struct aioc_mux_bank_dev **dev)
+static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev)
+{  
+  aioc_error_t e;
+  
+  // A5V_SW_BANK1_EN,    
+  struct no_os_i2c_init_param  aioc_i2c_en_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param en_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_en_line
+	};
+
+  // A5V_SW_BANK1_A0,  
+  struct no_os_i2c_init_param  aioc_i2c_a0_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a0_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a0_line
+	};
+  
+ // A5V_SW_BANK1_A1
+  struct no_os_i2c_init_param  aioc_i2c_a1_line =
+  {
+    .slave_address = tbd, 
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a1_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a1_line
+	};
+
+  
+  struct aioc_mux_bank_init_param aioc_mux_bank_init_param =
+  {
+  	.en_line = &en_line,
+    .a0_line = &a0_line,
+    .a1_line = &a1_line
+  };
+  
+  e = aioc_mux_bank_init(dev, &aioc_mux_bank_init_param);
+  if (e)  {  return e;  }
+
+  return error_none;
+}
+
+//==============================================================================
+//==============================================================================
+static aioc_error_t aioc_mux_bank_create_5v_2(struct aioc_mux_bank_dev **dev)
 {  
   aioc_error_t e;
     
-	struct xil_gpio_init_param xil_gpio_init = {
-		.device_id = 0,  // TBD
-		.type = GPIO_PS,
+  // A5V_SW_BANK2_EN,    
+  struct no_os_i2c_init_param  aioc_i2c_en_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param en_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_en_line
 	};
 
-	struct no_os_gpio_init_param ad469x_convst = {
-		.number = 0,  // TBD
-		.platform_ops = &xil_gpio_ops,
-		.extra = &xil_gpio_init
-	};
+  // A5V_SW_BANK2_A0,  
+  struct no_os_i2c_init_param  aioc_i2c_a0_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
 
-	
-  struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
-		.device_id = 0,
+	struct no_os_gpio_init_param a0_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a0_line
 	};
+  
+ // A5V_SW_BANK2_A1
+  struct no_os_i2c_init_param  aioc_i2c_a1_line =
+  {
+    .slave_address = tbd, 
+ 		.platform_ops = &aioc_i2c_ops,
+  };
 
-	struct no_os_gpio_init_param ad469x_resetn = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
-
-  struct no_os_gpio_init_param ad469x_busy = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+	struct no_os_gpio_init_param a1_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a1_line
 	};
 
   
-  struct no_os_spi_init_param spi_init = {
-  	.chip_select = 0,
-    .device_id = 0
+ struct aioc_mux_bank_init_param aioc_mux_bank_init_param =
+  {
+  	.en_line = &en_line,
+    .a0_line = &a0_line,
+    .a1_line = &a1_line
   };
   
-  
-  struct ad469x_init_param ad469x_init_param = {
-  	.spi_init = &spi_init,
-  	.gpio_resetn = &ad469x_resetn,
-    .gpio_convst = &ad469x_convst,
-    .gpio_busy = &ad469x_busy
-  };
-  
-  e = aioc_adc_init(dev, &ad469x_init_param);
+  e = aioc_mux_bank_init(dev, &aioc_mux_bank_init_param);
   if (e)  {  return e;  }
 
   return error_none;

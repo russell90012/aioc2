@@ -89,4 +89,8 @@ aioc_error_t aioc_analog_input_conversion(
   aioc_analog_id_t analog_id,
   uint16_t* result);
 
+aioc_error_t aioc_mux_banks_set_external_5v();
+aioc_error_t aioc_mux_banks_set_high_5v();
+aioc_error_t aioc_mux_banks_set_low_5v();
+
 #endif // AIOC_API_H

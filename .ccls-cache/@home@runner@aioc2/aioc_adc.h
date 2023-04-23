@@ -12,7 +12,6 @@
  */
 
 #include "aioc_defs.h"
-#include "aioc_i2c_gpio.h"
 #include "aioc_util.h"
 
 
