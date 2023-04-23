@@ -3,7 +3,7 @@
 
 #include "aioc_adc.h"
 #include "no_os_gpio.h"
-#include "aioc_i2c_gpio.h"
+#include "aioc_tca9555.h"
 #include "aioc_util.h"
 
 #include <string.h>

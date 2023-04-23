@@ -10,7 +10,8 @@
 
 #include "aioc_defs.h"
 #include "no_os_gpio.h"
-#include "aioc_i2c_gpio.h"
+#include "no_os_i2c.h"
+#include "aioc_tca9555.h"
 #include "aioc_util.h"
 
 #include <string.h>
@@ -197,7 +198,190 @@ enum
 };
 
 
+//================================
+// Private  definitions.
+//================================
 
+
+
+
+
+
+//================================
+// Public  definitions.
+//================================
+/**
+ * @brief Obtain the GPIO decriptor.
+ * @param desc - The GPIO descriptor.
+ * @param param - GPIO initialization parameters
+ * @return 0 in case of success, error otherwise.
+ */
+int32_t aioc_tca9555_get(struct no_os_gpio_desc **desc,
+		     const struct no_os_gpio_init_param *param)
+{
+	struct no_os_gpio_desc	*descriptor;
+	struct no_os_i2c_desc* extra;
+	int32_t			ret;
+
+	// Allocate the GPIO descriptor.
+  descriptor = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
+
+  // Allocate and initialize the I2C descriptor.
+  ret = no_os_i2c_init(extra, param->extra);
+	if(ret || !descriptor || !extra)
+    goto error;
+
+	descriptor->extra = extra;
+
+	*desc = descriptor;
+
+	return 0;
+  
+error:
+	free(extra);
+	free(descriptor);
+
+	return ret;
+}
+
+/**
+ * @brief Get the value of an optional GPIO.
+ * @param desc - The GPIO descriptor.
+ * @param param - GPIO Initialization parameters.
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_get_optional(struct no_os_gpio_desc **desc,
+			      const struct no_os_gpio_init_param *param)
+{
+	if(param == NULL)
+  {
+		*desc = NULL;
+		return -EINVAL;
+	}
+
+	return aioc_tca9555_get(desc, param);
+}
+
+/**
+ * @brief Free the resources allocated by no_os_gpio_get().
+ * @param desc - The GPIO descriptor.
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_remove(struct no_os_gpio_desc *desc)
+{
+	if (desc != NULL)
+  {
+		free(desc->extra);
+		free(desc);
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Enable the input direction of the specified GPIO.
+ * @param desc - The GPIO descriptor.
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_direction_input(struct no_os_gpio_desc *desc)
+{
+	return 0;
+}
+
+/**
+ * @brief Enable the output direction of the specified GPIO and set it's value.
+ * @param desc - The GPIO descriptor.
+ * @param value - The value.
+ *                Example: NO_OS_GPIO_HIGH
+ *                         NO_OS_GPIO_LOW
+ * @return 0 in case of success, error  otherwise.
+ */
+int32_t aioc_tca9555_direction_output(struct no_os_gpio_desc *desc,
+				  uint8_t value)
+{
+	return 0;
+}
+
+/**
+ * @brief Get the direction of the specified GPIO.
+ * @param desc - The GPIO descriptor.
+ * @param direction - The direction.
+ *                    Example: NO_OS_GPIO_OUT
+ *                             NO_OS_GPIO_IN
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_get_direction(struct no_os_gpio_desc *desc,
+			       uint8_t *direction)
+{
+  return -ENOSYS;
+}
+
+/**
+ * @brief Set the value of the specified GPIO.
+ * @param desc - The GPIO descriptor.
+ * @param value - The value.
+ *                Example: NO_OS_GPIO_HIGH
+ *                         NO_OS_GPIO_LOW
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_set_value(struct no_os_gpio_desc *desc, uint8_t value)
+{
+	return 0;
+}
+
+
+/**
+ * @brief Get the value of the specified GPIO.
+ * @param desc - The GPIO descriptor.
+ * @param value - The value.
+ *                Example: NO_OS_GPIO_HIGH
+ *                         NO_OS_GPIO_LOW
+ * @return 0 in case of success, -1 otherwise.
+ */
+int32_t aioc_tca9555_get_value(struct no_os_gpio_desc *desc,
+			   uint8_t *value)
+{
+	return 0;
+}
+
+
+
+/**
+ * @brief AIOC platform specific tca9555 platform ops structure
+ */
+const struct no_os_gpio_platform_ops aioc_tca9555_ops = {
+	.gpio_ops_get = &aioc_tca9555_get,
+	.gpio_ops_get_optional = &aioc_tca9555_get_optional,
+	.gpio_ops_remove = &aioc_tca9555_remove,
+	.gpio_ops_direction_input = &aioc_tca9555_direction_input,
+	.gpio_ops_direction_output = &aioc_tca9555_direction_output,
+	.gpio_ops_get_direction = &aioc_tca9555_get_direction,
+	.gpio_ops_set_value = &aioc_tca9555_set_value,
+	.gpio_ops_get_value = &aioc_tca9555_get_value,
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if  0
 
 //================================
 // Private  definitions.
@@ -267,6 +451,14 @@ static int32_t _gpio_init(
 }
 
 
+int32_t
+aioc_tca9555_extra_init(
+  no_os_i2c_desc** desc,
+  no_os_i2c_init_param* parm)
+{
+	desc = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
+  
+}
 
 
 //================================
@@ -279,24 +471,21 @@ static int32_t _gpio_init(
  * @param param - GPIO initialization parameters
  * @return 0 in case of success, error otherwise.
  */
-int32_t aioc_i2c_gpio_get(struct no_os_gpio_desc **desc,
+int32_t aioc_tca9555_get(struct no_os_gpio_desc **desc,
 		     const struct no_os_gpio_init_param *param)
 {
 	struct no_os_gpio_desc	*descriptor;
-	struct aioc_i2c_gpio_desc	*extra;
+	struct no_os_i2c_desc* extra;
 	int32_t			ret;
 
 	descriptor = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
-	extra = (struct aioc_i2c_gpio_desc*)malloc(sizeof(*extra));
 
-	if (!descriptor || !extra)
-		return -EINVAL;
+  // Initialize the I2C descriptor.
+  ret = no_os_i2c_init(extra, param->extra);
+	if(ret || !descriptor || !extra)
+		goto error;
 
 	descriptor->extra = extra;
-	ret = _gpio_init(descriptor, param);
-
-	if(ret != 0)
-		goto error;
 
 	*desc = descriptor;
 
@@ -315,7 +504,7 @@ error:
  * @param param - GPIO Initialization parameters.
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_get_optional(struct no_os_gpio_desc **desc,
+int32_t aioc_tca9555_get_optional(struct no_os_gpio_desc **desc,
 			      const struct no_os_gpio_init_param *param)
 {
 	if(param == NULL) {
@@ -323,7 +512,7 @@ int32_t aioc_i2c_gpio_get_optional(struct no_os_gpio_desc **desc,
 		return -EINVAL;
 	}
 
-	return aioc_i2c_gpio_get(desc, param);
+	return aioc_tca9555_get(desc, param);
 }
 
 /**
@@ -331,7 +520,7 @@ int32_t aioc_i2c_gpio_get_optional(struct no_os_gpio_desc **desc,
  * @param desc - The GPIO descriptor.
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_remove(struct no_os_gpio_desc *desc)
+int32_t aioc_tca9555_remove(struct no_os_gpio_desc *desc)
 {
 	if (desc != NULL) {
 	  struct aioc_i2c_gpio_desc* xdesc = desc->extra;
@@ -348,7 +537,7 @@ int32_t aioc_i2c_gpio_remove(struct no_os_gpio_desc *desc)
  * @param desc - The GPIO descriptor.
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_direction_input(struct no_os_gpio_desc *desc)
+int32_t aioc_tca9555_direction_input(struct no_os_gpio_desc *desc)
 {
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
   i2c_gpio_pin_conf_t*  pin_conf;
@@ -397,7 +586,7 @@ int32_t aioc_i2c_gpio_direction_input(struct no_os_gpio_desc *desc)
  *                         NO_OS_GPIO_LOW
  * @return 0 in case of success, error  otherwise.
  */
-int32_t aioc_i2c_gpio_direction_output(struct no_os_gpio_desc *desc,
+int32_t aioc_tca9555_direction_output(struct no_os_gpio_desc *desc,
 				  uint8_t value)
 {
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
@@ -467,7 +656,7 @@ int32_t aioc_i2c_gpio_direction_output(struct no_os_gpio_desc *desc,
  *                             NO_OS_GPIO_IN
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_get_direction(struct no_os_gpio_desc *desc,
+int32_t aioc_tca9555_get_direction(struct no_os_gpio_desc *desc,
 			       uint8_t *direction)
 {
   return -ENOSYS;
@@ -481,7 +670,7 @@ int32_t aioc_i2c_gpio_get_direction(struct no_os_gpio_desc *desc,
  *                         NO_OS_GPIO_LOW
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_set_value(struct no_os_gpio_desc *desc, uint8_t value)
+int32_t aioc_tca9555_set_value(struct no_os_gpio_desc *desc, uint8_t value)
 {
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
   i2c_gpio_pin_conf_t*  pin_conf;
@@ -533,7 +722,7 @@ int32_t aioc_i2c_gpio_set_value(struct no_os_gpio_desc *desc, uint8_t value)
  *                         NO_OS_GPIO_LOW
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aioc_i2c_gpio_get_value(struct no_os_gpio_desc *desc,
+int32_t aioc_tca9555_get_value(struct no_os_gpio_desc *desc,
 			   uint8_t *value)
 {
 	struct aioc_i2c_gpio_desc	*extra = desc->extra;
@@ -568,21 +757,8 @@ int32_t aioc_i2c_gpio_get_value(struct no_os_gpio_desc *desc,
 }
 
 
+#endif 
 
-
-/**
- * @brief AIOC platform specific GPIO platform ops structure
- */
-const struct no_os_gpio_platform_ops aioc_i2c_gpio_ops = {
-	.gpio_ops_get = &aioc_i2c_gpio_get,
-	.gpio_ops_get_optional = &aioc_i2c_gpio_get_optional,
-	.gpio_ops_remove = &aioc_i2c_gpio_remove,
-	.gpio_ops_direction_input = &aioc_i2c_gpio_direction_input,
-	.gpio_ops_direction_output = &aioc_i2c_gpio_direction_output,
-	.gpio_ops_get_direction = &aioc_i2c_gpio_get_direction,
-	.gpio_ops_set_value = &aioc_i2c_gpio_set_value,
-	.gpio_ops_get_value = &aioc_i2c_gpio_get_value,
-};
 
 
 

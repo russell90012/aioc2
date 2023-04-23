@@ -4,7 +4,9 @@
 #include "aioc.h"
 #include "aioc_adc.h"
 #include "no_os_gpio.h"
-#include "aioc_i2c_gpio.h"
+#include "no_os_i2c.h"
+#include "aioc_tca9555.h"
+#include "aioc_i2c.h"
 #include "xilinx_gpio.h"
 #include "aioc_mux.h"
 
@@ -136,6 +138,8 @@ aioc_error_t aioc_mux_banks_set_low_5v()
 ///================================
 // Private definitions.
 //================================
+// TBD
+const int tbd = 0;
 
 //==============================================================================
 //==============================================================================
@@ -143,38 +147,63 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 {  
   aioc_error_t e;
     
-  struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
-		.device_id = 0,
-	};
+  
+  // convst_line
+  struct no_os_i2c_init_param  aioc_i2c_convst_line = 
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+ };
 
-
-	struct no_os_gpio_init_param ad469x_convst = {
-		.number = NC_0,  // TBD Using i2c GPIO as a fake for PS driver 
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+	struct no_os_gpio_init_param ad469x_convst =
+  {
+		.port = tbd,
+    .number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_convst_line
 	};
 
 	
-	struct no_os_gpio_init_param ad469x_resetn = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
+  // A5V_3V3_ADC_RESET_N,
+  struct no_os_i2c_init_param  aioc_i2c_reset_n_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
 
-  struct no_os_gpio_init_param ad469x_busy = {
-		.number = A5V_3V3_ADC_RESET_N,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+	struct no_os_gpio_init_param ad469x_resetn =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_reset_n_line
+	};
+  
+  // A5V_3V3_ADC_busy,
+  struct no_os_i2c_init_param  aioc_i2c_busy_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+  struct no_os_gpio_init_param ad469x_busy =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_busy_line
 	};
 
   
-  struct no_os_spi_init_param spi_init = {
+  struct no_os_spi_init_param spi_init =
+  {
   	.chip_select = 0,
     .device_id = 0
   };
   
   
-  struct ad469x_init_param ad469x_init_param = {
+  struct ad469x_init_param ad469x_init_param =
+  {
   	.spi_init = &spi_init,
   	.gpio_resetn = &ad469x_resetn,
     .gpio_convst = &ad469x_convst,
@@ -192,30 +221,55 @@ static aioc_error_t aioc_adc_device_create_5v(struct ad469x_dev **dev)
 static aioc_error_t aioc_mux_bank_create_5v_1(struct aioc_mux_bank_dev **dev)
 {  
   aioc_error_t e;
-    
-	struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
-		.device_id = 0,
+  
+  // A5V_SW_BANK1_EN,    
+  struct no_os_i2c_init_param  aioc_i2c_en_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param en_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_en_line
 	};
 
-	struct no_os_gpio_init_param en_line = {
-		.number = A5V_SW_BANK1_EN,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+  // A5V_SW_BANK1_A0,  
+  struct no_os_i2c_init_param  aioc_i2c_a0_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a0_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a0_line
+	};
+  
+ // A5V_SW_BANK1_A1
+  struct no_os_i2c_init_param  aioc_i2c_a1_line =
+  {
+    .slave_address = tbd, 
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a1_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a1_line
 	};
 
- 	struct no_os_gpio_init_param a0_line = {
-		.number = A5V_SW_BANK1_A0,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
-
- 	struct no_os_gpio_init_param a1_line = {
-		.number = A5V_SW_BANK1_A1,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
-
- struct aioc_mux_bank_init_param aioc_mux_bank_init_param = {
+  
+  struct aioc_mux_bank_init_param aioc_mux_bank_init_param =
+  {
   	.en_line = &en_line,
     .a0_line = &a0_line,
     .a1_line = &a1_line
@@ -233,29 +287,54 @@ static aioc_error_t aioc_mux_bank_create_5v_2(struct aioc_mux_bank_dev **dev)
 {  
   aioc_error_t e;
     
-	struct aioc_i2c_gpio_init_param aioc_i2c_gpio_init = {
-		.device_id = 0,
+  // A5V_SW_BANK2_EN,    
+  struct no_os_i2c_init_param  aioc_i2c_en_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param en_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_en_line
 	};
 
-	struct no_os_gpio_init_param en_line = {
-		.number = A5V_SW_BANK2_EN,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
+  // A5V_SW_BANK2_A0,  
+  struct no_os_i2c_init_param  aioc_i2c_a0_line =
+  {
+    .slave_address = tbd,
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a0_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a0_line
+	};
+  
+ // A5V_SW_BANK2_A1
+  struct no_os_i2c_init_param  aioc_i2c_a1_line =
+  {
+    .slave_address = tbd, 
+ 		.platform_ops = &aioc_i2c_ops,
+  };
+
+	struct no_os_gpio_init_param a1_line =
+  {
+		.port = tbd,
+		.number = tbd,
+		.platform_ops = &aioc_tca9555_ops,
+		.extra = &aioc_i2c_a1_line
 	};
 
- 	struct no_os_gpio_init_param a0_line = {
-		.number = A5V_SW_BANK2_A0,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
-
- 	struct no_os_gpio_init_param a1_line = {
-		.number = A5V_SW_BANK2_A1,
-		.platform_ops = &aioc_i2c_gpio_ops,
-		.extra = &aioc_i2c_gpio_init
-	};
-
- struct aioc_mux_bank_init_param aioc_mux_bank_init_param = {
+  
+ struct aioc_mux_bank_init_param aioc_mux_bank_init_param =
+  {
   	.en_line = &en_line,
     .a0_line = &a0_line,
     .a1_line = &a1_line

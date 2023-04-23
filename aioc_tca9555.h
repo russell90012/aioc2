@@ -276,30 +276,9 @@ i2c_gpio_pin_name_t;
 
 
 /**
- * @struct i2c_gpio_init_param
- * @brief Structure holding the initialization parameters for aioc i2c gpio platform
- * specific GPIO parameters.
+ * @brief aioc tca9555 platform specific gpio platform ops structure
  */
-struct aioc_i2c_gpio_init_param {
-	/** Device ID */
-	uint32_t		device_id;
-};
-
-/**
- * @struct i2c_gpio_desc
- * @brief  platform specific aioc i2c GPIO descriptor
- */
-struct aioc_i2c_gpio_desc {
-	/** GPIO configuration */
-	void			*config;
-	/** GPIO Instance */
-	void			*instance;
-};
-
-/**
- * @brief aic I2C gpio platform specific gpio platform ops structure
- */
-extern const struct no_os_gpio_platform_ops aioc_i2c_gpio_ops;
+extern const struct no_os_gpio_platform_ops aioc_tca9555_ops;
 
 
 

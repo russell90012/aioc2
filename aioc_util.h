@@ -72,40 +72,6 @@ aioc_error_t aioc_util_spi_transaction(
 //
 // I2C related.
 //
-/**
- * @struct no_os_i2c_init_param
- * @brief Structure holding the parameters for I2C initialization.
- */
-struct no_os_i2c_init_param {
-	/** Device ID */
-	uint32_t	device_id;
-	/** I2C maximum transfer speed supported */
-	uint32_t	max_speed_hz;
-	/** Slave address */
-	uint8_t		slave_address;
-	/** I2C platform specific functions */
-	const struct no_os_i2c_platform_ops *platform_ops;
-	/** I2C extra parameters (device specific parameters) */
-	void		*extra;
-};
-
-/**
- * @struct no_os_i2c_desc
- * @brief Structure holding I2C descriptor
- */
-struct no_os_i2c_desc {
-	/** Device ID */
-	uint32_t	device_id;
-	/** I2C maximum transfer speed supported */
-	uint32_t	max_speed_hz;
-	/** Slave address */
-	uint8_t		slave_address;
-	/** I2C platform specific functions */
-	const struct no_os_i2c_platform_ops *platform_ops;
-	/** I2C extra parameters (device specific parameters) */
-	void		*extra;
-};
-
 
 aioc_error_t aioc_util_i2c_init(void** instance);
 

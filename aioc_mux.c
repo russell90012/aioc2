@@ -3,7 +3,7 @@
 
 #include "aioc_defs.h"
 #include "aioc_mux.h"
-#include "aioc_i2c_gpio.h"
+#include "aioc_tca9555.h"
 
 
 //================================
