@@ -202,14 +202,54 @@ enum
 // Private  definitions.
 //================================
 
+//==============================================================================
+//==============================================================================
+static int32_t 
+register_read(
+  struct no_os_i2c_desc* desc,
+  uint8_t register_address,
+  uint8_t* register_value)
+{
+  uint8_t data[2] = {0, 0};
+  int32_t ret;
+  
+  data[0] = register_address;
+  
+  ret = no_os_i2c_read(desc, data, 2, 0);
+  if (ret)  return ret;
+  
+  *register_value = data[1];
 
+  return 0;
+}
 
+//==============================================================================
+//==============================================================================
+static int32_t
+register_write(
+  struct no_os_i2c_desc* desc,
+  uint8_t register_address,
+  uint8_t register_value)
+{
+  uint8_t data[2] = {0, 0};
+  int32_t ret;
+  
+  data[0] = register_address;
+  data[1] = register_value;
+  
+  ret = no_os_i2c_read(desc, data, 2, 0);
+  if (ret)  return ret;
 
+  return 0;
+}
 
 
 //================================
 // Public  definitions.
 //================================
+
+//==============================================================================
+//==============================================================================
 /**
  * @brief Obtain the GPIO decriptor.
  * @param desc - The GPIO descriptor.
@@ -227,7 +267,7 @@ int32_t aioc_tca9555_get(struct no_os_gpio_desc **desc,
   descriptor = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
 
   // Allocate and initialize the I2C descriptor.
-  ret = no_os_i2c_init(extra, param->extra);
+  ret = no_os_i2c_init(&extra, param->extra);
 	if(ret || !descriptor || !extra)
     goto error;
 
@@ -244,6 +284,8 @@ error:
 	return ret;
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Get the value of an optional GPIO.
  * @param desc - The GPIO descriptor.
@@ -262,6 +304,8 @@ int32_t aioc_tca9555_get_optional(struct no_os_gpio_desc **desc,
 	return aioc_tca9555_get(desc, param);
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Free the resources allocated by no_os_gpio_get().
  * @param desc - The GPIO descriptor.
@@ -278,6 +322,8 @@ int32_t aioc_tca9555_remove(struct no_os_gpio_desc *desc)
 	return 0;
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Enable the input direction of the specified GPIO.
  * @param desc - The GPIO descriptor.
@@ -285,9 +331,29 @@ int32_t aioc_tca9555_remove(struct no_os_gpio_desc *desc)
  */
 int32_t aioc_tca9555_direction_input(struct no_os_gpio_desc *desc)
 {
+  struct no_os_i2c_desc* i2c_desc = desc->extra;
+  int32_t port =  desc->port;
+  int32_t pin = desc->number;
+  uint8_t register_address = 0;
+  uint8_t reg_val = 0;
+  int32_t ret = 0;
+
+  // Set the configuration regster for this pin to input direcction.
+  register_address = COMMAND_BYTE_CONFIG_0 + port;
+
+  ret = register_read(i2c_desc, register_address, &reg_val);
+  if (ret)  return ret;
+ 
+	reg_val |= (1 << pin);
+
+  ret = register_write(i2c_desc, register_address, reg_val);
+  if (ret)  return ret;
+ 
 	return 0;
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Enable the output direction of the specified GPIO and set it's value.
  * @param desc - The GPIO descriptor.
@@ -299,9 +365,43 @@ int32_t aioc_tca9555_direction_input(struct no_os_gpio_desc *desc)
 int32_t aioc_tca9555_direction_output(struct no_os_gpio_desc *desc,
 				  uint8_t value)
 {
+  struct no_os_i2c_desc* i2c_desc = desc->extra;
+  int32_t port =  desc->port;
+  int32_t pin = desc->number;
+  uint8_t register_address = 0;
+  uint8_t reg_val = 0;
+  int32_t ret = 0;
+
+  // Set the configuration regster for this pin to output direcction.
+  register_address = COMMAND_BYTE_CONFIG_0 + port;
+
+  ret = register_read(i2c_desc, register_address, &reg_val);
+  if (ret)  return ret;
+ 
+	reg_val &= ~(1 << pin);
+
+  ret = register_write(i2c_desc, register_address, reg_val);
+  if (ret)  return ret;
+ 
+  // Set the output regster for this pin to the specified value.
+  register_address = COMMAND_BYTE_OUTPUT_0 + port;
+
+  ret = register_read(i2c_desc, register_address, &reg_val);
+  if (ret)  return ret;
+ 
+  if (value)
+    reg_val |= (1 << pin);
+  else
+    reg_val &= ~(1 << pin);
+  
+  ret = register_write(i2c_desc, register_address, reg_val);
+  if (ret)  return ret;
+ 
 	return 0;
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Get the direction of the specified GPIO.
  * @param desc - The GPIO descriptor.
@@ -316,6 +416,8 @@ int32_t aioc_tca9555_get_direction(struct no_os_gpio_desc *desc,
   return -ENOSYS;
 }
 
+//==============================================================================
+//==============================================================================
 /**
  * @brief Set the value of the specified GPIO.
  * @param desc - The GPIO descriptor.
@@ -326,10 +428,32 @@ int32_t aioc_tca9555_get_direction(struct no_os_gpio_desc *desc,
  */
 int32_t aioc_tca9555_set_value(struct no_os_gpio_desc *desc, uint8_t value)
 {
-	return 0;
+  struct no_os_i2c_desc* i2c_desc = desc->extra;
+  int32_t port =  desc->port;
+  int32_t pin = desc->number;
+  uint8_t register_address = 0;
+  uint8_t reg_val = 0;
+  int32_t ret = 0;
+
+  // Set the value for this output register pin.
+  register_address = COMMAND_BYTE_OUTPUT_0 + port;
+
+  ret = register_read(i2c_desc, register_address, &reg_val);
+  if (ret)  return ret;
+ 
+  if (value)
+    reg_val |= (1 << pin);
+  else
+    reg_val &= ~(1 << pin);
+
+  ret = register_write(i2c_desc, register_address, reg_val);
+  if (ret)  return ret;
+  
+  return 0;
 }
 
-
+//==============================================================================
+//==============================================================================
 /**
  * @brief Get the value of the specified GPIO.
  * @param desc - The GPIO descriptor.
@@ -341,10 +465,23 @@ int32_t aioc_tca9555_set_value(struct no_os_gpio_desc *desc, uint8_t value)
 int32_t aioc_tca9555_get_value(struct no_os_gpio_desc *desc,
 			   uint8_t *value)
 {
-	return 0;
+  struct no_os_i2c_desc* i2c_desc = desc->extra;
+  int32_t port =  desc->port;
+  int32_t pin = desc->number;
+  uint8_t register_address = 0;
+  uint8_t reg_val = 0;
+  int32_t ret = 0;
+
+  // Get the value for this output register pin.
+  register_address = COMMAND_BYTE_OUTPUT_0 + port;
+
+  ret = register_read(i2c_desc, register_address, &reg_val);
+  if (ret)  return ret;
+
+  *value = (reg_val >> pin) & 0x01;
+  
+  return 0;
 }
-
-
 
 /**
  * @brief AIOC platform specific tca9555 platform ops structure
@@ -359,411 +496,4 @@ const struct no_os_gpio_platform_ops aioc_tca9555_ops = {
 	.gpio_ops_set_value = &aioc_tca9555_set_value,
 	.gpio_ops_get_value = &aioc_tca9555_get_value,
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if  0
-
-//================================
-// Private  definitions.
-//================================
-
-//==============================================================================
-//==============================================================================
-static aioc_error_t
-aioc_i2c_gpio_register_read(
-  void* instance,
-  uint32_t device_address,
-  uint32_t command_byte,
-  uint8_t* reg_val)
-{
-  aioc_error_t  e = 0;
-
-  e = aioc_util_i2c_read(instance, device_address, command_byte, reg_val, 1);
-  if (e)  {  return e;  }
-  
-  return error_none;
-}
-
-
-static aioc_error_t
-aioc_i2c_gpio_register_write(
-  void* instance,
-  uint32_t device_address,
-  uint32_t command_byte,
-  uint8_t reg_val)
-{
-  aioc_error_t  e = 0;
-
-  e = aioc_util_i2c_write(instance, device_address, command_byte, &reg_val, 1);
-  if (e)  {  return e;  }
-  
-  return error_none;
-}
-
-
-//==============================================================================
-//==============================================================================
-/**
- * @brief Prepare the GPIO decriptor.
- * @param desc - The GPIO descriptor.
- * @param param - The structure that contains the GPIO parameters.
- * @return 0 in case of success, error otherwise.
- */
-static int32_t _gpio_init(
-  struct no_os_gpio_desc *desc,
-	const struct no_os_gpio_init_param *param)
-{
-  aioc_error_t e;
-	int32_t				ret;
-	struct aioc_i2c_gpio_desc		    *xdesc;
-	struct aioc_i2c_gpio_init_param	*xinit;
-
-	xdesc = desc->extra;
-	xinit = param->extra;
-
-	desc->port = param->port;
-	desc->number = param->number;
-
-  e = aioc_util_i2c_init(&xdesc->instance);
-  if (e)  return -EINVAL;
-  
-	return 0;
-}
-
-
-int32_t
-aioc_tca9555_extra_init(
-  no_os_i2c_desc** desc,
-  no_os_i2c_init_param* parm)
-{
-	desc = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
-  
-}
-
-
-//================================
-// Public  definitions.
-//================================
-
-/**
- * @brief Obtain the GPIO decriptor.
- * @param desc - The GPIO descriptor.
- * @param param - GPIO initialization parameters
- * @return 0 in case of success, error otherwise.
- */
-int32_t aioc_tca9555_get(struct no_os_gpio_desc **desc,
-		     const struct no_os_gpio_init_param *param)
-{
-	struct no_os_gpio_desc	*descriptor;
-	struct no_os_i2c_desc* extra;
-	int32_t			ret;
-
-	descriptor = (struct no_os_gpio_desc *)malloc(sizeof(*descriptor));
-
-  // Initialize the I2C descriptor.
-  ret = no_os_i2c_init(extra, param->extra);
-	if(ret || !descriptor || !extra)
-		goto error;
-
-	descriptor->extra = extra;
-
-	*desc = descriptor;
-
-	return 0;
-  
-error:
-	free(extra);
-	free(descriptor);
-
-	return ret;
-}
-
-/**
- * @brief Get the value of an optional GPIO.
- * @param desc - The GPIO descriptor.
- * @param param - GPIO Initialization parameters.
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_get_optional(struct no_os_gpio_desc **desc,
-			      const struct no_os_gpio_init_param *param)
-{
-	if(param == NULL) {
-		*desc = NULL;
-		return -EINVAL;
-	}
-
-	return aioc_tca9555_get(desc, param);
-}
-
-/**
- * @brief Free the resources allocated by no_os_gpio_get().
- * @param desc - The GPIO descriptor.
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_remove(struct no_os_gpio_desc *desc)
-{
-	if (desc != NULL) {
-	  struct aioc_i2c_gpio_desc* xdesc = desc->extra;
-	  free(xdesc->instance);
-		free(desc->extra);
-		free(desc);
-	}
-
-	return 0;
-}
-
-/**
- * @brief Enable the input direction of the specified GPIO.
- * @param desc - The GPIO descriptor.
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_direction_input(struct no_os_gpio_desc *desc)
-{
-	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  i2c_gpio_pin_conf_t*  pin_conf;
-  uint32_t              device_adrs;
-  uint32_t              bank;
-  uint32_t              pin;
-	uint8_t               reg_val;
-  aioc_error_t          e;
-  
-  // Get the i2c gpio pin configuration for the described number. Check the
-  // number first.
-  if (desc->number >= i2c_gpio_pin_configuration_table_length)
-    return -EINVAL;
-  
-  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  device_adrs = pin_conf->device_adrs;
-  bank = pin_conf->bank;
-  pin = pin_conf->pin;
-
-  // Get the configuration register value for this pin configuration.
-  e = aioc_i2c_gpio_register_read(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_CONFIG_0 + bank,
-        &reg_val);
-
-  // Set the direction as output for this pin.
-	reg_val |= (1 << pin);
-
-  // Set the configuration register value for this pin configuration.
-  e = aioc_i2c_gpio_register_write(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_CONFIG_0 + bank,
-        reg_val);
-
-	return 0;
-}
-
-
-/**
- * @brief Enable the output direction of the specified GPIO and set it's value.
- * @param desc - The GPIO descriptor.
- * @param value - The value.
- *                Example: NO_OS_GPIO_HIGH
- *                         NO_OS_GPIO_LOW
- * @return 0 in case of success, error  otherwise.
- */
-int32_t aioc_tca9555_direction_output(struct no_os_gpio_desc *desc,
-				  uint8_t value)
-{
-	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  i2c_gpio_pin_conf_t*  pin_conf;
-  uint32_t              device_adrs;
-  uint32_t              bank;
-  uint32_t              pin;
-	uint8_t               reg_val;
-  aioc_error_t          e;
-  
-  // Get the i2c gpio pin configuration for the described number. Check the
-  // number first.
-  if (desc->number >= i2c_gpio_pin_configuration_table_length)
-    return -EINVAL;
-  
-  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  device_adrs = pin_conf->device_adrs;
-  bank = pin_conf->bank;
-  pin = pin_conf->pin;
-
-  // Set the configuration regster for this pin to output direcction.
-  e = aioc_i2c_gpio_register_read(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_CONFIG_0 + bank,
-        &reg_val);
-  if (e)  return -EINVAL;
-  
-	reg_val &= ~(1 << pin);
-  
-  e = aioc_i2c_gpio_register_write(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_CONFIG_0 + bank,
-        reg_val);
-  if (e)  return -EINVAL;
-
-  // Set the output regster for this pin to the specified value.
-  e = aioc_i2c_gpio_register_read(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_OUTPUT_0 + bank,
-        &reg_val);
-  if (e)  return -EINVAL;
-
-	if (value)
-		reg_val |= (1 << pin);
-  else
-    reg_val &= ~(1 << pin);
-  
-  e = aioc_i2c_gpio_register_write(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_OUTPUT_0 + bank,
-        reg_val);
-  if (e)  return -EINVAL;
-
-	return 0;
-}
-
-
-/**
- * @brief Get the direction of the specified GPIO.
- * @param desc - The GPIO descriptor.
- * @param direction - The direction.
- *                    Example: NO_OS_GPIO_OUT
- *                             NO_OS_GPIO_IN
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_get_direction(struct no_os_gpio_desc *desc,
-			       uint8_t *direction)
-{
-  return -ENOSYS;
-}
-
-/**
- * @brief Set the value of the specified GPIO.
- * @param desc - The GPIO descriptor.
- * @param value - The value.
- *                Example: NO_OS_GPIO_HIGH
- *                         NO_OS_GPIO_LOW
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_set_value(struct no_os_gpio_desc *desc, uint8_t value)
-{
-	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  i2c_gpio_pin_conf_t*  pin_conf;
-  uint32_t              device_adrs;
-  uint32_t              bank;
-  uint32_t              pin;
-	uint8_t               reg_val;
-  aioc_error_t          e;
-  
-  // Get the i2c gpio pin configuration for the described number. Check the
-  // number first.
-  if (desc->number >= i2c_gpio_pin_configuration_table_length)
-    return -EINVAL;
-  
-  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  device_adrs = pin_conf->device_adrs;
-  bank = pin_conf->bank;
-  pin = pin_conf->pin;
-
-  // Set the output regster for this pin to the specified value.
-  e = aioc_i2c_gpio_register_read(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_OUTPUT_0 + bank,
-        &reg_val);
-  if (e)  return -EINVAL;
-
-	if (value)
-		reg_val |= (1 << pin);
-  else
-    reg_val &= ~(1 << pin);
-  
-  e = aioc_i2c_gpio_register_write(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_OUTPUT_0 + bank,
-        reg_val);
-  if (e)  return -EINVAL;
-
-	return 0;
-}
-
-
-/**
- * @brief Get the value of the specified GPIO.
- * @param desc - The GPIO descriptor.
- * @param value - The value.
- *                Example: NO_OS_GPIO_HIGH
- *                         NO_OS_GPIO_LOW
- * @return 0 in case of success, -1 otherwise.
- */
-int32_t aioc_tca9555_get_value(struct no_os_gpio_desc *desc,
-			   uint8_t *value)
-{
-	struct aioc_i2c_gpio_desc	*extra = desc->extra;
-  i2c_gpio_pin_conf_t*  pin_conf;
-  uint32_t              device_adrs;
-  uint32_t              bank;
-  uint32_t              pin;
-	uint8_t               reg_val;
-  aioc_error_t          e;
-  
-  // Get the i2c gpio pin configuration for the described number. Check the
-  // number first.
-  if (desc->number >= i2c_gpio_pin_configuration_table_length)
-    return -EINVAL;
-  
-  pin_conf = &i2c_gpio_pin_configuration_table[desc->number];
-  device_adrs = pin_conf->device_adrs;
-  bank = pin_conf->bank;
-  pin = pin_conf->pin;
-
-  // Get the output register value for this pin configuration.
-  e = aioc_i2c_gpio_register_read(
-        extra->instance,
-        device_adrs,
-        COMMAND_BYTE_OUTPUT_0 + bank,
-        &reg_val);
-
-  // Get the value as given for this pin.
-	*value = (reg_val >> pin) & 0x01;
-  
-	return 0;
-}
-
-
-#endif 
-
-
-
-
-
-
-
-
 
